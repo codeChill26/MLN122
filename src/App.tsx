@@ -207,7 +207,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "model", text: "Xin chào! Tôi là trợ lý ảo chuyên về Phép biện chứng duy vật. Bạn muốn tìm hiểu về quy luật nào hôm nay?" }
+    { role: "model", text: "Xin chào! Tôi là trợ lý ảo chuyên về Hội nhập kinh tế quốc tế của Việt Nam. Bạn muốn tìm hiểu về nội dung nào hôm nay?" }
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -258,7 +258,7 @@ export default function App() {
   };
 
   const getDefaultWelcomeMessage = (): Message[] => ([
-    { role: "model", text: "Xin chào! Tôi là trợ lý ảo chuyên về Phép biện chứng duy vật. Bạn muốn tìm hiểu về quy luật nào hôm nay?" }
+    { role: "model", text: "Xin chào! Tôi là trợ lý ảo chuyên về Hội nhập kinh tế quốc tế của Việt Nam. Bạn muốn tìm hiểu về nội dung nào hôm nay?" }
   ]);
 
   const loadLocalMessages = (uid: string): Message[] => {
@@ -327,6 +327,9 @@ export default function App() {
 
   const getReadableAuthError = (error: any, mode: "login" | "register") => {
     const code = error?.code;
+    const message = error?.message;
+    console.log("Parsing error code:", code, message);
+
     switch (code) {
       case "auth/email-already-in-use":
         return "Email này đã được sử dụng. Hãy đăng nhập hoặc dùng Google nếu bạn đã đăng ký bằng Google.";
@@ -338,7 +341,9 @@ export default function App() {
       case "auth/invalid-login-credentials":
         return "Email hoặc mật khẩu không chính xác.";
       case "auth/popup-closed-by-user":
-        return "Bạn đã đóng cửa sổ đăng nhập Google.";
+        return "Bạn đã đóng cửa sổ đăng nhập Google trước khi hoàn tất.";
+      case "auth/popup-blocked":
+        return "Cửa sổ đăng nhập bị trình duyệt chặn. Hãy cho phép hiển thị popup và thử lại.";
       case "auth/too-many-requests":
         return "Bạn thao tác quá nhiều lần. Vui lòng thử lại sau ít phút.";
       case "auth/invalid-email":
@@ -346,9 +351,9 @@ export default function App() {
       case "auth/weak-password":
         return "Mật khẩu quá yếu. Hãy dùng ít nhất 6 ký tự.";
       case "auth/operation-not-allowed":
-        return mode === "register"
-          ? "Email/Password chưa được bật trong Firebase Authentication."
-          : "Phương thức đăng nhập này chưa được bật trong Firebase Authentication.";
+        return "Đăng nhập Google chưa được bật trong Firebase Console. Hãy kiểm tra cài đặt Authentication.";
+      case "auth/unauthorized-domain":
+        return "Tên miền này (domain) chưa được thêm vào danh sách 'Authorized domains' trong Firebase Console.";
       default:
         return mode === "register"
           ? "Đăng ký thất bại. Vui lòng thử lại."
@@ -363,19 +368,27 @@ export default function App() {
   };
 
   const handleGoogleLogin = async () => {
+    console.log("Starting Google Login...");
     setAuthError("");
     setIsAuthSubmitting(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      console.log("Calling signInWithPopup...");
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("Login success:", result.user.email);
       setIsAuthDialogOpen(false);
       resetAuthForm();
       toast.success("Đăng nhập thành công!");
     } catch (error: any) {
-      console.error("Google login failed", error);
+      console.error("Google login failed details:", {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack,
+        customData: error?.customData
+      });
       if (error?.code === "auth/account-exists-with-different-credential") {
         setAuthError("Email này đã đăng ký bằng mật khẩu. Hãy đăng nhập bằng email và mật khẩu trước.");
       } else {
-        setAuthError(getReadableAuthError(error, "login"));
+        setAuthError(getReadableAuthError(error, "login") + ` (${error?.code || 'unknown'})`);
       }
     } finally {
       setIsAuthSubmitting(false);
@@ -659,14 +672,15 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-primary" />
-            <span className="text-xl font-serif font-bold">Triết Học Biện Chứng</span>
+            <span className="text-xl font-serif font-bold">Kinh Tế Hội Nhập</span>
           </div>
 
           <div className="hidden md:flex items-center gap-6">
             <div className="flex items-center gap-6 mr-4 border-r pr-6">
               <a href="#overview" className="text-sm font-medium hover:text-primary transition-colors">Tổng quan</a>
-                            <a href="#laws" className="text-sm font-medium hover:text-primary transition-colors">Quy luật</a>
-              <a href="#flipbook" className="text-sm font-medium hover:text-primary transition-colors">Flipbook</a>
+              <a href="#impacts" className="text-sm font-medium hover:text-primary transition-colors">Tác động</a>
+              <a href="#directions" className="text-sm font-medium hover:text-primary transition-colors">Phương hướng</a>
+              <a href="#flipbook" className="text-sm font-medium hover:text-primary transition-colors">Câu chuyện Hội nhập</a>
               {/* <a href="#categories" className="text-sm font-medium hover:text-primary transition-colors">Phạm trù</a> */}
             </div>
 
@@ -755,15 +769,17 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
                 </Badge>
 
                 {/* 2. Tiêu đề chính (h1): Thêm text-white và drop-shadow-lg */}
-                <h1 className="text-5xl md:text-7xl lg:text-8xl mb-8 leading-[0.9] tracking-tight font-serif italic text-white drop-shadow-lg">
-                  Phép Biện Chứng <br className="hidden md:block" />
+                <h1 className="text-5xl md:text-7xl lg:text-8xl mb-0.5 leading-[0.9] tracking-tight font-serif italic text-white drop-shadow-lg">
+                  <div className="leading-29">
+                    HỘI NHẬP KINH TẾ QUỐC TẾ CỦA VIỆT NAM
+                  </div>
+                  <br className="hidden md:block" />
                   {/* Duy Vật: Đổi text-primary thành text-white */}
-                  <span className="text-white not-italic">Duy Vật</span>
                 </h1>
 
                 {/* 3. Đoạn mô tả (p): Đổi text-black thành text-white cố định */}
                 <p className="text-xl md:text-2xl text-white max-w-3xl mx-auto mb-12 font-sans font-medium leading-relaxed drop-shadow-xl">
-                  Học thuyết khoa học nghiên cứu những quy luật chung nhất của sự vận động và phát triển của tự nhiên, xã hội và tư duy.
+                  Quá trình quốc gia thực hiện gắn kết nền kinh tế của mình với nền kinh tế thế giới thông qua các nỗ lực tự nguyện: tự do hóa kinh tế, mở cửa thị trường và tham gia các định chế quốc tế.
                 </p>
 
                 <div className="max-w-4xl mx-auto mb-12 overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/10 dark:bg-zinc-900/50 shadow-2xl backdrop-blur-sm">
@@ -807,26 +823,35 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
             <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center max-w-5xl mx-auto">
               <div>
                 <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Tổng quan</Badge>
-                <h2 className="text-4xl md:text-5xl font-serif italic mb-8">Khái niệm & Đặc điểm</h2>
+                <h2 className="text-4xl md:text-5xl font-serif italic mb-8">Khái niệm và nội dung hội nhập kinh tế quốc tế
+                </h2>
                 <div className="space-y-8">
                   <div className="flex gap-6">
                     <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-secondary/50 dark:bg-zinc-900 flex items-center justify-center">
                       <BookOpen className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="text-xl font-bold mb-2">Biện chứng là gì?</h4>
-                      <p className="text-muted-foreground leading-relaxed mb-4">
-                        Biện chứng là phương pháp xem xét những sự vật và những phản ánh của chúng trong tư tưởng, trong mối quan hệ qua lại lẫn nhau, trong sự ràng buộc, vận động, phát sinh và tiêu vong của chúng.
-                      </p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 bg-primary/5 rounded-xl border border-primary/10">
-                          <span className="text-[10px] font-mono uppercase text-primary block mb-1">Khách quan</span>
-                          <p className="text-xs">Biện chứng của thế giới vật chất.</p>
-                        </div>
-                        <div className="p-3 bg-primary/5 rounded-xl border border-primary/10">
-                          <span className="text-[10px] font-mono uppercase text-primary block mb-1">Chủ quan</span>
-                          <p className="text-xs">Tư duy biện chứng của con người.</p>
-                        </div>
+                      <h4 className="text-xl font-bold mb-2">Khái niệm và sự cần thiết khách quan</h4>
+                      <div>
+                        <p className="text-muted-foreground leading-relaxed">
+                          <ul className="text-muted-foreground leading-relaxed list-disc pl-6 space-y-2">
+                            <li>
+                              <ul className="list-disc pl-6 mt-1 space-y-1">
+                                <li>Tự do hóa các hoạt động kinh tế.</li>
+                                <li>Mở cửa thị trường.</li>
+                                <li>Tham gia các định chế kinh tế quốc tế.</li>
+                              </ul>
+                            </li>
+                            <li>
+                              <span className="font-semibold">Sự cần thiết:</span>
+                              <ul className="list-disc pl-6 mt-1 space-y-1">
+                                <li>Tận dụng nguồn lực bên ngoài (vốn, công nghệ, quản lý).</li>
+                                <li>Mở rộng thị trường xuất khẩu.</li>
+                                <li>Thúc đẩy cải cách thể chế trong nước.</li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -835,9 +860,22 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
                       <Zap className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="text-xl font-bold mb-2">Đặc điểm & Vai trò</h4>
+                      <h4 className="text-xl font-bold mb-2">Tính tất yếu khách quan</h4>
                       <p className="text-muted-foreground leading-relaxed">
-                        Phép biện chứng duy vật là sự thống nhất giữa thế giới quan duy vật và phương pháp luận biện chứng. Đây là học thuyết nghiên cứu, khái quát biện chứng của thế giới thành các nguyên lý, quy luật khoa học nhằm xây dựng phương pháp luận khoa học cho nhận thức và cải tạo thực tiễn.
+                        <ul className="text-muted-foreground leading-relaxed list-disc pl-6 space-y-2">
+                          <li>
+                            <span className="font-semibold">Xu thế toàn cầu hóa: </span>
+                            <span>Đây là xu thế không thể đảo ngược; quốc gia đứng ngoài sẽ bị tụt hậu.</span>
+                          </li>
+                          <li>
+                            <span className="font-semibold">Sự phát triển của Lực lượng sản xuất: </span>
+                            <span>CMCN 4.0 thúc đẩy sự phân công lao động quốc tế diễn ra mạnh mẽ.</span>
+                          </li>
+                          <li>
+                            <span className="font-semibold">Giải quyết các vấn đề toàn cầu: </span>
+                            <span>Biến đổi khí hậu, dịch bệnh, an ninh năng lượng đòi hỏi sự hợp tác quốc tế.</span>
+                          </li>
+                        </ul>
                       </p>
                     </div>
                   </div>
@@ -851,13 +889,17 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
                   </div>
                   <h4 className="text-2xl font-serif italic mb-6">Cấu trúc nội dung cốt lõi</h4>
                   <div className="grid grid-cols-1 gap-4">
-                      {/* <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm">
-                        <span className="font-medium">Cặp phạm trù</span>
-                        <Badge variant="secondary" className="rounded-full">06</Badge>
-                      </div> */}
-                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm">
-                      <span className="font-medium">Quy luật cơ bản</span>
-                      <Badge variant="secondary" className="rounded-full">03</Badge>
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-primary/5">
+                      <span className="font-medium text-sm">Khái niệm và nội dung</span>
+                      <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border-none">Phần 1</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-primary/5">
+                      <span className="font-medium text-sm">Tác động của hội nhập</span>
+                      <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border-none">Phần 2</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-primary/5">
+                      <span className="font-medium text-sm">Phương hướng nâng cao</span>
+                      <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border-none">Phần 3</Badge>
                     </div>
                   </div>
                 </div>
@@ -866,122 +908,195 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
           </div>
         </section>
         <section
-          id="laws"
+          id="impacts"
           className="py-32 relative z-10 bg-fixed bg-center bg-cover"
           style={{ backgroundImage: 'url("/images/Section3.png")' }}
         >
-          {/* Lớp phủ màu đậm và làm mờ sâu */}
           <div className="absolute inset-0 bg-secondary/80 dark:bg-zinc-900/90 backdrop-blur-lg -z-10" />
 
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Hệ thống Quy luật</h2>
+              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Phần 2</Badge>
+              <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Tác động của hội nhập kinh tế quốc tế</h2>
               <div className="w-20 h-1 bg-primary mx-auto mb-6 rounded-full" />
               <p className="text-muted-foreground dark:text-zinc-400 max-w-xl mx-auto text-lg font-light">
-                Ba quy luật cơ bản phản ánh ba khía cạnh khác nhau của quá trình phát triển không ngừng.
+                Đánh giá những ảnh hưởng đa chiều của quá trình hội nhập đến sự phát triển của Việt Nam.
               </p>
             </div>
 
-            <Tabs defaultValue="law1" className="w-full max-w-5xl mx-auto">
-              <TabsList className="flex flex-wrap md:grid w-full md:grid-cols-3 h-auto p-2 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm border border-primary/10 rounded-2xl mb-12">
-                {laws.map((law) => (
-                  <TabsTrigger
-                    key={law.id}
-                    value={law.id}
-                    className="flex-1 py-4 text-muted-foreground data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-primary data-[state=active]:shadow-xl data-[state=active]:shadow-primary/5 rounded-xl transition-all duration-300"
-                  >
-                    <span className="text-sm md:text-base font-bold tracking-tight">{law.shortTitle}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {laws.map((law) => (
-                <TabsContent key={law.id} value={law.id} className="mt-0">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid md:grid-cols-12 bg-white dark:bg-zinc-950 rounded-[2.5rem] shadow-2xl shadow-primary/5 overflow-hidden border border-primary/5"
-                  >
-                    <div className="md:col-span-5 bg-primary/[0.02] p-10 flex flex-col border-b md:border-b-0 md:border-r border-primary/5">
-                      <div className="w-20 h-20 rounded-3xl bg-white dark:bg-zinc-900 flex items-center justify-center shadow-xl shadow-primary/5 mb-8 transform -rotate-3">
-                        {law.icon}
-                      </div>
-                      <h3 className="text-3xl mb-4 font-serif leading-tight">{law.title}</h3>
-                      <p className="text-base text-accent font-medium italic mb-10 opacity-80">{law.subtitle}</p>
-
-                      {/* AI Image Generation Area */}
-                      <div className="w-full mt-auto">
-                        <div className="aspect-[4/3] w-full rounded-3xl bg-secondary/50 border border-dashed border-primary/20 flex flex-col items-center justify-center overflow-hidden relative group shadow-inner">
-                          {law.imageUrl ? (
-                            <>
-                              <img
-                                src={law.imageUrl}
-                                alt={law.title}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                                <Button
-                                  variant="secondary"
-                                  className="rounded-full px-6 shadow-xl"
-                                  onClick={() => handleGenerateImage(law.id)}
-                                  disabled={isGeneratingImage[law.id]}
-                                >
-                                  {isGeneratingImage[law.id] ? "Đang tạo..." : "Tạo lại ảnh AI"}
-                                </Button>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="p-8 flex flex-col items-center text-center">
-                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                                <Zap className="w-6 h-6 text-primary/40" />
-                              </div>
-                              <p className="text-xs text-muted-foreground mb-6 font-medium">Chưa có hình ảnh minh họa AI</p>
-                              <Button
-                                variant="outline"
-                                className="rounded-full border-primary/20 hover:bg-primary/5"
-                                onClick={() => handleGenerateImage(law.id)}
-                                disabled={isGeneratingImage[law.id]}
-                              >
-                                {isGeneratingImage[law.id] ? "Đang tạo..." : "Tạo ảnh minh họa AI"}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-4 italic text-center opacity-60">
-                          * Hình ảnh được tạo ngẫu nhiên bởi AI dựa trên nội dung quy luật
-                        </p>
-                      </div>
+            <div className="max-w-5xl mx-auto overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-950 shadow-2xl border border-primary/5">
+              <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-primary/10">
+                <div className="p-10 lg:p-12">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-green-600" />
                     </div>
-                    <div className="md:col-span-7 p-12 lg:p-16">
-                      <div className="prose prose-slate dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans text-lg">
-                        <ReactMarkdown>{law.content}</ReactMarkdown>
+                    <h3 className="text-2xl font-bold text-green-600">Tác Động Tích Cực</h3>
+                  </div>
+                  <ul className="space-y-6">
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Tăng trưởng kinh tế</p>
+                        <p className="text-muted-foreground">Thúc đẩy GDP, mở rộng thị trường xuất khẩu (nông sản, dệt may, điện tử).</p>
                       </div>
-
-                      <Separator className="my-10 opacity-50" />
-
-                      <div className="p-8 bg-accent/5 dark:bg-accent/10 rounded-3xl border border-accent/10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                          <BookOpen className="w-12 h-12 text-accent" />
-                        </div>
-                        <h4 className="text-accent font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-widest">
-                          <span className="w-8 h-[1px] bg-accent/30" />
-                          Ví dụ minh họa
-                        </h4>
-                        <p className="text-foreground/80 dark:text-zinc-300 italic font-serif text-xl leading-relaxed">
-                          "{law.example}"
-                        </p>
+                    </li>
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Thu hút FDI</p>
+                        <p className="text-muted-foreground">Tiếp nhận vốn, công nghệ hiện đại và phương thức quản trị tiên tiến.</p>
                       </div>
+                    </li>
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Nâng cao trình độ nhân lực</p>
+                        <p className="text-muted-foreground">Tạo môi trường cọ xát, học hỏi kỹ năng nghề nghiệp quốc tế.</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Hoàn thiện thể chế</p>
+                        <p className="text-muted-foreground">Tạo sức ép cải cách hành chính, minh bạch hóa pháp luật theo chuẩn mực chung.</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div className="p-10 lg:p-12 bg-red-500/[0.02]">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                      <X className="w-6 h-6 text-red-600" />
                     </div>
-                  </motion.div>
-                </TabsContent>
-              ))}
-            </Tabs>
+                    <h3 className="text-2xl font-bold text-red-600">Tác Động Tiêu Cực</h3>
+                  </div>
+                  <ul className="space-y-6">
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Gia tăng cạnh tranh</p>
+                        <p className="text-muted-foreground">Nhiều doanh nghiệp nội địa yếu kém đứng trước nguy cơ phá sản.</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Rủi ro phụ thuộc</p>
+                        <p className="text-muted-foreground">Kinh tế dễ bị tổn thương trước các biến động chính trị/kinh tế thế giới.</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Phân hóa giàu nghèo</p>
+                        <p className="text-muted-foreground">Khoảng cách thu nhập giữa các vùng miền và nhóm dân cư gia tăng.</p>
+                      </div>
+                    </li>
+                    <li className="flex gap-4">
+                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-lg mb-1">Thách thức về an ninh</p>
+                        <p className="text-muted-foreground">Nguy cơ chuyển dịch công nghệ lạc hậu và ô nhiễm môi trường vào trong nước.</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Categories Section */}
-          
+
+        <section
+          id="directions"
+          className="py-32 bg-gradient-to-b from-background via-secondary/10 to-background dark:from-zinc-950 dark:via-zinc-900/50 dark:to-zinc-950 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_40%)]" />
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-20">
+                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Phần 3</Badge>
+                <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Phương hướng nâng cao hiệu quả hội nhập</h2>
+                <p className="text-muted-foreground max-w-3xl mx-auto text-lg font-light leading-relaxed">
+                  Các giải pháp chiến lược nhằm tối ưu hóa lợi ích và hạn chế rủi ro trong quá trình hội nhập quốc tế của Việt Nam.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* 6.2.3.1 */}
+                <div className="group p-8 rounded-[2rem] bg-white dark:bg-zinc-900 border border-primary/5 shadow-xl shadow-primary/5 hover:scale-[1.02] transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-6">
+                    <Info className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">Nhận thức về thời cơ & thách thức</h4>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                    Hội nhập không phải là "thẻ bài vạn năng" mà là môi trường rèn luyện. Cần thấy rõ cả Cơ hội và Thách thức để chuẩn bị tâm thế chủ động.
+                  </p>
+                </div>
+
+                {/* 6.2.3.2 */}
+                <div className="group p-8 rounded-[2rem] bg-white dark:bg-zinc-900 border border-primary/5 shadow-xl shadow-primary/5 hover:scale-[1.02] transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6">
+                    <Layers className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">Chiến lược & lộ trình phù hợp</h4>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Xác định rõ các lĩnh vực ưu tiên và lộ trình mở cửa có tính toán. Hội nhập toàn diện từ kinh tế đến chính trị, văn hóa, quốc phòng.
+                  </p>
+                </div>
+
+                {/* 6.2.3.3 */}
+                <div className="group p-8 rounded-[2rem] bg-white dark:bg-zinc-900 border border-primary/5 shadow-xl shadow-primary/5 hover:scale-[1.02] transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
+                    <RefreshCw className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">Chủ động liên kết quốc tế</h4>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Thực hiện nghiêm túc các cam kết (WTO, CPTPP, EVFTA...). Chuyển từ "tham gia" sang "chủ động đóng góp", xây dựng luật chơi chung.
+                  </p>
+                </div>
+
+                {/* 6.2.3.4 */}
+                <div className="group p-8 rounded-[2rem] bg-white dark:bg-zinc-900 border border-primary/5 shadow-xl shadow-primary/5 hover:scale-[1.02] transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center mb-6">
+                    <BookOpen className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">Hoàn thiện thể chế & pháp luật</h4>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Đồng bộ hóa hệ thống pháp luật với các cam kết quốc tế. Cải cách hành chính, giảm chi phí tuân thủ cho doanh nghiệp.
+                  </p>
+                </div>
+
+                {/* 6.2.3.5 */}
+                <div className="group p-8 rounded-[2rem] bg-white dark:bg-zinc-900 border border-primary/5 shadow-xl shadow-primary/5 hover:scale-[1.02] transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center mb-6">
+                    <Zap className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">Nâng cao năng lực cạnh tranh</h4>
+                  <ul className="text-muted-foreground text-xs space-y-2">
+                    <li>• Cấp quốc gia: Cải thiện môi trường kinh doanh.</li>
+                    <li>• Cấp doanh nghiệp: Đổi mới công nghệ, thương hiệu.</li>
+                    <li>• Cấp sản phẩm: Tiêu chuẩn chất lượng (ESG, chứng chỉ xanh).</li>
+                  </ul>
+                </div>
+
+                {/* 6.2.3.6 */}
+                <div className="group p-8 rounded-[2rem] bg-white dark:bg-zinc-900 border border-primary/5 shadow-xl shadow-primary/5 hover:scale-[1.02] transition-all duration-300">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center mb-6">
+                    <Settings className="w-6 h-6 text-cyan-600" />
+                  </div>
+                  <h4 className="text-xl font-bold mb-4">Kinh tế độc lập, tự chủ</h4>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Hội nhập sâu càng cần tự chủ để không bị "hòa tan". Làm chủ các ngành then chốt và đa dạng hóa quan hệ để tránh phụ thuộc.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section
           id="flipbook"
           className="py-32 bg-gradient-to-b from-background via-secondary/10 to-background dark:from-zinc-950 dark:via-zinc-900/50 dark:to-zinc-950 relative overflow-hidden"
@@ -990,26 +1105,11 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-16">
-                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Flipbook tương tác</Badge>
-                <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Truyện tranh hóa ba quy luật cơ bản</h2>
+                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Truyện tranh tương tác</Badge>
+                <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Con đường Hội nhập của Việt Nam</h2>
                 <p className="text-muted-foreground max-w-3xl mx-auto text-lg font-light leading-relaxed">
-                  Một phiên bản kể chuyện trực quan giúp người học tiếp cận các quy luật cơ bản của phép biện chứng duy vật bằng hình ảnh, nhịp đọc và trải nghiệm lật trang tự nhiên.
+                  Theo chân hành trình lật mở những trang sử kinh tế, từ những ngày đầu mở cửa đến khát vọng kiến tạo giá trị Việt trên thị trường toàn cầu.
                 </p>
-              </div>
-
-              <div className="mb-8 flex flex-wrap justify-center gap-4">
-                <a
-                  href="#flipbook-reader"
-                  className={cn(buttonVariants({ variant: "default", size: "lg" }), "rounded-full px-8 shadow-lg shadow-primary/20")}
-                >
-                  Đọc flipbook ngay
-                </a>
-                <a
-                  href="#laws"
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-full px-8 border-primary/20 hover:bg-primary/5")}
-                >
-                  Xem lại phần quy luật
-                </a>
               </div>
 
               <div id="flipbook-reader" className="rounded-[2rem] border border-primary/10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md shadow-2xl shadow-primary/5 p-4 md:p-8">
@@ -1019,40 +1119,6 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
           </div>
         </section>
 
-        <section className="py-32 bg-white dark:bg-zinc-950 relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Giá trị cốt lõi</h2>
-                <p className="text-muted-foreground dark:text-zinc-400 text-lg font-light">Tầm quan trọng của Phép biện chứng trong nhận thức và thực tiễn.</p>
-              </div>
-              <div className="grid md:grid-cols-3 gap-10">
-                <div className="group p-10 rounded-[2rem] bg-secondary/20 dark:bg-zinc-900/50 border border-primary/5 hover:bg-white dark:hover:bg-zinc-900 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                    <Layers className="w-6 h-6 text-primary" />
-                  </div>
-                  <h4 className="text-2xl mb-4 font-serif">Thế giới quan</h4>
-                  <p className="text-muted-foreground dark:text-zinc-400 leading-relaxed font-light">Giúp con người nhìn nhận thế giới trong sự liên hệ, vận động và phát triển không ngừng.</p>
-                </div>
-                <div className="group p-10 rounded-[2rem] bg-secondary/20 dark:bg-zinc-900/50 border border-primary/5 hover:bg-white dark:hover:bg-zinc-900 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                    <RefreshCw className="w-6 h-6 text-primary" />
-                  </div>
-                  <h4 className="text-2xl mb-4 font-serif">Phương pháp luận</h4>
-                  <p className="text-muted-foreground dark:text-zinc-400 leading-relaxed font-light">Cung cấp công cụ tư duy khoa học để phân tích và giải quyết các vấn đề phức tạp.</p>
-                </div>
-                <div className="group p-10 rounded-[2rem] bg-secondary/20 dark:bg-zinc-900/50 border border-primary/5 hover:bg-white dark:hover:bg-zinc-900 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                    <Zap className="w-6 h-6 text-primary" />
-                  </div>
-                  <h4 className="text-2xl mb-4 font-serif">Thực tiễn</h4>
-                  <p className="text-muted-foreground dark:text-zinc-400 leading-relaxed font-light">Hướng dẫn hành động cải tạo thế giới dựa trên các quy luật khách quan.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="py-20 border-t bg-white dark:bg-zinc-950 relative overflow-hidden">
@@ -1063,19 +1129,18 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-serif font-bold tracking-tight">Triết Học Biện Chứng</span>
+              <span className="text-2xl font-serif font-bold tracking-tight">Kinh Tế Hội Nhập</span>
             </div>
             <nav className="flex flex-wrap justify-center gap-8 mb-12">
               <a href="#overview" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Tổng quan</a>
-                            <a href="#laws" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Quy luật</a>
+              <a href="#impacts" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Tác động</a>
+              <a href="#directions" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Phương hướng</a>
               <a href="#flipbook" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Flipbook</a>
               {/* <a href="#categories" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Phạm trù</a> */}
               <button onClick={() => setIsChatOpen(true)} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Trợ lý AI</button>
             </nav>
             <Separator className="max-w-xs mx-auto mb-12 opacity-50" />
-            <p className="text-sm text-muted-foreground font-light italic">
-              © 2026 — Kiến thức nền tảng cho tư duy khoa học và hiện đại.
-            </p>
+            © 2026 — Kiến thức về hội nhập kinh tế quốc tế của Việt Nam.
           </div>
         </div>
       </footer>
@@ -1087,7 +1152,7 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
         onClick={() => setIsChatOpen(true)}
       >
         <MessageSquare className="w-5 h-5" />
-        <span className="font-bold text-sm tracking-wide">AI Triết học</span>
+        <span className="font-bold text-sm tracking-wide">AI Hội Nhập</span>
       </Button>
 
       {/* Chatbot Interface */}
@@ -1118,7 +1183,7 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
                 </div>
                 <div>
                   <p className="font-serif font-bold text-lg leading-none mb-1 text-zinc-900 dark:text-zinc-100">
-                    Triết Học AI
+                    Kinh Tế AI
                   </p>
                   {user && (
                     <p className="text-[10px] text-orange-600 dark:text-orange-400 font-medium uppercase tracking-wider">
@@ -1261,7 +1326,7 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
               {authMode === "login" ? "Chào mừng trở lại" : "Tham gia cùng chúng tôi"}
             </h2>
             <p className="text-primary-foreground/80 text-sm">
-              {authMode === "login" ? "Đăng nhập để tiếp tục hành trình triết học" : "Tạo tài khoản để lưu trữ lịch sử trò chuyện"}
+              {authMode === "login" ? "Đăng nhập để tiếp tục học tập" : "Tạo tài khoản để lưu trữ lịch sử trò chuyện"}
             </p>
           </div>
 

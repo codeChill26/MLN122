@@ -26,37 +26,37 @@ const AUDIO_END_OFFSETS_MS = [
 ];
 
 const DEFAULT_PAGES = [
-  { src: "/pages/cover_start.png", alt: "Bìa truyện", type: "cover" },
-  { src: "/pages/1.png", alt: "Trang 1" },
-  { src: "/pages/2.png", alt: "Trang 2" },
-  { src: "/pages/3.png", alt: "Trang 3" },
-  { src: "/pages/4.png", alt: "Trang 4" },
-  { src: "/pages/5.png", alt: "Trang 5" },
-  { src: "/pages/6.png", alt: "Trang 6" },
-  { src: "/pages/7.png", alt: "Trang 7" },
-  { src: "/pages/8.png", alt: "Trang 8" },
-  { src: "/pages/9.png", alt: "Trang 9" },
-  { src: "/pages/10.png", alt: "Trang 10" },
-  { src: "/pages/11.png", alt: "Trang 11" },
-  { src: "/pages/12.png", alt: "Trang 12" },
-  { src: "/pages/cover_end.png", alt: "Bìa sau", type: "cover" },
+  { src: "https://images.unsplash.com/photo-1528154032344-90d021667041?auto=format&fit=crop&w=1200&q=80", alt: "Bìa truyện: Con đường Hội nhập", type: "cover" },
+  { src: "https://images.unsplash.com/photo-1555620935-77636e053a47?auto=format&fit=crop&w=1200&q=80", alt: "Khởi đầu" },
+  { src: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80", alt: "Sự cần thiết" },
+  { src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80", alt: "Toàn cầu hóa" },
+  { src: "https://images.unsplash.com/photo-1582213710300-8517c2ca0d75?auto=format&fit=crop&w=1200&q=80", alt: "Hợp đồng lịch sử" },
+  { src: "https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?auto=format&fit=crop&w=1200&q=80", alt: "Nông sản vươn xa" },
+  { src: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80", alt: "Hiện đại hóa sản xuất" },
+  { src: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80", alt: "Nâng tầm nhân lực" },
+  { src: "https://images.unsplash.com/photo-1524522173746-f628baad3644?auto=format&fit=crop&w=1200&q=80", alt: "Thách thức cạnh tranh" },
+  { src: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1200&q=80", alt: "Rủi ro phụ thuộc" },
+  { src: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80", alt: "Chủ động thích nghi" },
+  { src: "https://images.unsplash.com/photo-1523726491678-bf852e717f6a?auto=format&fit=crop&w=1200&q=80", alt: "Đổi mới sáng tạo" },
+  { src: "https://images.unsplash.com/photo-1444492417251-9c84a5fa1c9b?auto=format&fit=crop&w=1200&q=80", alt: "Độc lập và Tự chủ" },
+  { src: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80", alt: "Bìa sau: Tương lai rộng mở", type: "cover" },
 ];
 
 const DEFAULT_STORY_TEXTS = [
-  "Flipbook mở đầu cho hành trình khám phá ba quy luật cơ bản của phép biện chứng duy vật qua câu chuyện trực quan và dễ ghi nhớ.",
-  "Minh và Lan cùng bắt đầu một dự án học tập, từ đó mở ra những khác biệt trong cách tiếp cận tri thức và hành động.",
-  "Sự đối lập giữa hai cách làm dần xuất hiện, tạo nên động lực phát triển và thay đổi trong nhận thức.",
-  "Mỗi lựa chọn nhỏ tích lũy theo thời gian đều chuẩn bị cho một bước chuyển lớn hơn về chất.",
-  "Những biểu hiện bề ngoài có thể gây ấn tượng ban đầu, nhưng chiều sâu nội dung mới quyết định giá trị bền vững.",
-  "Quá trình va chạm giữa các mặt khác nhau làm nảy sinh thay đổi, đúng tinh thần quy luật mâu thuẫn.",
-  "Sự kiên trì tích lũy từng yếu tố nhỏ cho thấy quy luật lượng – chất đang âm thầm vận động.",
-  "Mỗi điều chỉnh sau va vấp không phải mất mát đơn thuần, mà là một lần vượt bỏ để tiến lên trình độ mới.",
-  "Đến giai đoạn then chốt, sự khác biệt tích lũy đủ nhiều sẽ chuyển thành kết quả rõ rệt.",
-  "Khả năng chỉ thành hiện thực khi được nuôi dưỡng bằng hành động và phương pháp đúng đắn.",
-  "Thành công hay thất bại đều gắn với nguyên nhân sâu xa, không chỉ do ngẫu nhiên trước mắt.",
-  "Sự trưởng thành đến từ việc biết dung hòa, kế thừa và vượt lên, thay vì phủ định sạch trơn.",
-  "Câu chuyện khép lại bằng một bước phát triển mới, nơi cái mới hình thành trên cơ sở chọn lọc từ cái cũ.",
-  "Flipbook kết thúc, nhưng ba quy luật cơ bản vẫn tiếp tục hiện diện trong học tập, tư duy và đời sống hằng ngày.",
+  "Con đường Hội nhập: Việt Nam vươn mình ra biển lớn. Câu chuyện về sự chuyển mình và gắn kết với kinh tế toàn cầu.",
+  "Từ những bước đi đầu tiên, Việt Nam nhận ra rằng hội nhập không chỉ là lựa chọn, mà là tất yếu khách quan để phát triển bền vững.",
+  "Để đẩy mạnh công nghiệp hóa, hiện đại hóa, chúng ta cần tận dụng nguồn lực từ thế giới: vốn, công nghệ và quản lý tiên tiến.",
+  "Làn sóng toàn cầu hóa cuốn phanh mọi rào cản, thúc đẩy sự phân công lao động quốc tế mạnh mẽ hơn bao giờ hết.",
+  "Gia nhập các định chế quốc tế (WTO, CPTPP...) là bước ngoặt đưa Việt Nam vào 'sân chơi chung' đầy cơ hội của nhân loại.",
+  "Hàng hóa Việt Nam, từ nông sản đến điện tử, bắt đầu hành trình chinh phục những thị trường khó tính nhất toàn cầu.",
+  "Các dòng vốn FDI đổ vào, mang theo những dây chuyền sản xuất tự động hóa hiện đại và tư duy quản trị mới.",
+  "Môi trường quốc tế là nơi nhân lực Việt Nam rèn luyện, nâng cao trình độ và khả năng thích ứng chuyên nghiệp.",
+  "Nhưng hội nhập cũng mang đến bão tố. Doanh nghiệp nội địa phải đối mặt với sức ép cạnh tranh khổng lồ từ các đối thủ lớn.",
+  "Chúng ta phải tỉnh táo trước nguy cơ phụ thuộc vào biến động bên ngoài và những thách thức về an sinh, môi trường.",
+  "Để vượt qua, mỗi doanh nghiệp và cá nhân cần chủ động nắm bắt luật chơi quốc tế, nâng cao năng lực cạnh tranh cốt lõi.",
+  "Chuyển mình mãnh liệt từ 'gia công' sang 'sáng tạo', khẳng định bản sắc và trí tuệ Việt trên bản đồ kinh tế toàn cầu.",
+  "Hội nhập nhưng giữ vững bản sắc. Xây dựng nền kinh tế độc lập, tự chủ là chìa khóa để bảo vệ chủ quyền quốc gia.",
+  "Tương lai rộng mở phía trước. Với tâm thế chủ động, Việt Nam sẵn sàng chinh phục những đỉnh cao mới trong kỷ nguyên hội nhập.",
 ];
 
 const DEFAULT_AUDIO_FILES = [
@@ -658,7 +658,7 @@ const handleFlip = async (e) => {
         <div>
           <p className="flipbook-kicker">Truyện tranh tương tác</p>
           <h3 className="flipbook-title">
-            Ba quy luật cơ bản qua câu chuyện Minh và Lan
+            Con đường Hội nhập: Việt Nam và Kinh tế toàn cầu
           </h3>
           <p className="flipbook-description">
             Lật trang để theo dõi diễn biến câu chuyện và cảm nhận các quy luật
