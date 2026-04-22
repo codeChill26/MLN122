@@ -50,7 +50,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getChatResponse, generateImage } from "./lib/gemini";
+import { FooterQuiz } from "@/components/footer-quiz";
+import { getChatResponse } from "./lib/gemini";
 import { auth, googleProvider } from "./lib/firebase";
 import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import FlipBook from "./FlipBook";
@@ -88,69 +89,6 @@ interface Category {
   example: string;
   icon: React.ReactNode;
 }
-
-const CATEGORIES: Category[] = [
-  {
-    id: "c1",
-    title: "Cái riêng & Cái chung",
-    definition: "Cái riêng chỉ sự vật nhất định; Cái chung chỉ thuộc tính phổ biến trong nhiều sự vật.",
-    detailedDefinition: "Cái riêng là phạm trù dùng để chỉ một sự vật, một hiện tượng, một quá trình nhất định. Cái chung là phạm trù dùng để chỉ những mặt, những thuộc tính không những có ở một sự vật, một hiện tượng nhất định, mà còn lặp lại trong nhiều sự vật, hiện tượng khác nữa. Ngoài ra còn có 'Cái đơn nhất' chỉ những đặc điểm chỉ có ở một sự vật.",
-    relationship: "Cái chung chỉ tồn tại trong cái riêng, thông qua cái riêng mà biểu hiện sự tồn tại của mình. Cái riêng chỉ tồn tại trong mối liên hệ đưa tới cái chung. Cái riêng là cái toàn bộ, phong phú hơn cái chung; cái chung là cái bộ phận nhưng sâu sắc hơn cái riêng. Cái chung và cái đơn nhất có thể chuyển hóa cho nhau trong những điều kiện nhất định.",
-    meaning: "Để nhận thức được cái chung phải xuất phát từ cái riêng. Nhiệm vụ của nhận thức là phải tìm ra cái chung và trong hoạt động thực tiễn phải dựa vào cái chung để cải tạo cái riêng. Trong hoạt động thực tiễn cần chủ động tạo điều kiện cho cái đơn nhất có lợi cho con người trở thành cái chung và ngược lại.",
-    example: "Mỗi con người cụ thể là một 'Cái riêng'. Những thuộc tính sinh học (có tư duy, biết lao động) là 'Cái chung' của loài người. Dấu vân tay của mỗi người là 'Cái đơn nhất'.",
-    icon: <User className="w-5 h-5" />
-  },
-  {
-    id: "c2",
-    title: "Nguyên nhân & Kết quả",
-    definition: "Nguyên nhân là sự tác động tạo ra biến đổi; Kết quả là những biến đổi xuất hiện.",
-    detailedDefinition: "Nguyên nhân là phạm trù chỉ sự tương tác lẫn nhau giữa các mặt trong một sự vật hoặc giữa các sự vật với nhau gây ra những biến đổi nhất định. Kết quả là phạm trù chỉ những biến đổi xuất hiện do sự tương tác giữa các mặt trong một sự vật hoặc giữa các sự vật với nhau gây ra.",
-    relationship: "Nguyên nhân là cái có trước, kết quả là cái có sau. Một nguyên nhân có thể sinh ra nhiều kết quả và một kết quả có thể do nhiều nguyên nhân gây ra. Nguyên nhân và kết quả có thể thay đổi vị trí cho nhau (chuỗi nhân quả vô tận). Kết quả có thể tác động trở lại nguyên nhân đã sinh ra nó.",
-    meaning: "Vì mối liên hệ nhân quả có tính khách quan nên phải tìm nguyên nhân trong chính thế giới khách quan. Vì một kết quả có thể do nhiều nguyên nhân nên cần phân loại nguyên nhân (chủ yếu, thứ yếu, bên trong, bên ngoài) để có biện pháp xử lý đúng đắn.",
-    example: "Sự tương tác giữa dòng điện và dây dẫn (nguyên nhân) làm cho dây dẫn nóng lên (kết quả). Việc học tập chăm chỉ (nguyên nhân) dẫn đến kết quả thi cử tốt (kết quả).",
-    icon: <Zap className="w-5 h-5" />
-  },
-  {
-    id: "c3",
-    title: "Tất nhiên & Ngẫu nhiên",
-    definition: "Tất nhiên do nguyên nhân bên trong quyết định; Ngẫu nhiên do sự kết hợp tình cờ bên ngoài.",
-    detailedDefinition: "Tất nhiên là phạm trù chỉ cái do những nguyên nhân cơ bản bên trong của kết cấu vật chất quyết định và trong những điều kiện nhất định nó phải xảy ra như thế chứ không thể khác được. Ngẫu nhiên là phạm trù chỉ cái không do mối liên hệ bản chất, bên trong quyết định mà do sự kết hợp những điều kiện bên ngoài quyết định.",
-    relationship: "Tất nhiên và ngẫu nhiên đều tồn tại khách quan. Tất nhiên đóng vai trò chi phối sự phát triển, ngẫu nhiên làm cho sự phát triển đó diễn ra dưới hình thức phong phú. Tất nhiên bao giờ cũng vạch đường đi cho mình thông qua vô số cái ngẫu nhiên. Chúng có thể chuyển hóa cho nhau khi điều kiện thay đổi.",
-    meaning: "Trong hoạt động thực tiễn phải dựa vào cái tất nhiên chứ không thể dựa vào cái ngẫu nhiên. Tuy nhiên không được bỏ qua cái ngẫu nhiên vì nó có thể ảnh hưởng đến tiến trình phát triển. Cần tạo điều kiện để cái ngẫu nhiên có lợi chuyển hóa thành cái tất nhiên.",
-    example: "Gieo một hạt ngô xuống đất đủ điều kiện thì việc nó nảy mầm thành cây ngô là 'Tất nhiên'. Việc cây ngô đó bị một con sâu cắn lá là 'Ngẫu nhiên'.",
-    icon: <ArrowRight className="w-5 h-5" />
-  },
-  {
-    id: "c4",
-    title: "Nội dung & Hình thức",
-    definition: "Nội dung là tổng hợp các yếu tố tạo thành; Hình thức là phương thức tồn tại của nội dung.",
-    detailedDefinition: "Nội dung là phạm trù chỉ tổng hợp tất cả những mặt, những yếu tố, những quá trình tạo nên sự vật. Hình thức là phạm trù chỉ phương thức tồn tại và phát triển của sự vật, là hệ thống các mối liên hệ tương đối bền vững giữa các yếu tố của nội dung đó.",
-    relationship: "Nội dung và hình thức luôn gắn bó chặt chẽ. Nội dung quyết định hình thức: nội dung thay đổi thì hình thức cũng phải thay đổi theo. Hình thức có tính độc lập tương đối và tác động trở lại nội dung: nếu phù hợp sẽ thúc đẩy nội dung phát triển, nếu không phù hợp sẽ kìm hãm.",
-    meaning: "Không được tách rời nội dung và hình thức hoặc tuyệt đối hóa một trong hai. Trong hoạt động thực tiễn, trước hết phải căn cứ vào nội dung, nhưng cũng phải chú ý thay đổi hình thức cho phù hợp với nội dung mới để thúc đẩy sự phát triển.",
-    example: "Nội dung của một cuốn sách là tư tưởng, kiến thức truyền tải; hình thức là cách sắp xếp chương hồi, ngôn ngữ, trình bày. Nội dung của một cơ thể sống là các tế bào, cơ quan; hình thức là cấu trúc tổ chức của chúng.",
-    icon: <Layers className="w-5 h-5" />
-  },
-  {
-    id: "c5",
-    title: "Bản chất & Hiện tượng",
-    definition: "Bản chất là liên hệ ổn định bên trong; Hiện tượng là biểu hiện bên ngoài của bản chất.",
-    detailedDefinition: "Bản chất là phạm trù chỉ tổng hợp tất cả những mặt, những mối liên hệ tất nhiên, tương đối ổn định ở bên trong sự vật, quy định sự vận động và phát triển của sự vật đó. Hiện tượng là phạm trù chỉ sự biểu hiện của những mặt, những mối liên hệ đó ra bên ngoài.",
-    relationship: "Bản chất và hiện tượng thống nhất với nhau: bản chất nào hiện tượng ấy, bản chất bộc lộ qua hiện tượng. Tuy nhiên chúng cũng đối lập nhau: bản chất là cái bên trong, hiện tượng là cái bên ngoài; bản chất tương đối ổn định, hiện tượng thường xuyên biến đổi; hiện tượng có thể phản ánh sai lệch bản chất (ảo tưởng).",
-    meaning: "Muốn hiểu đúng sự vật không được dừng lại ở hiện tượng mà phải đi sâu tìm hiểu bản chất. Tuy nhiên phải thông qua việc phân tích nhiều hiện tượng khác nhau mới tìm ra được bản chất. Cần phân biệt hiện tượng thực và hiện tượng giả (ảo tưởng).",
-    example: "Bản chất của xã hội tư bản là sự bóc lột giá trị thặng dư; hiện tượng là việc mua bán sức lao động trên thị trường dường như diễn ra theo nguyên tắc trao đổi ngang giá.",
-    icon: <Info className="w-5 h-5" />
-  },
-  {
-    id: "c6",
-    title: "Khả năng & Hiện thực",
-    definition: "Hiện thực là cái đang tồn tại; Khả năng là cái chưa có nhưng sẽ tới khi đủ điều kiện.",
-    detailedDefinition: "Hiện thực là phạm trù chỉ những cái đang tồn tại trong thực tế. Khả năng là phạm trù chỉ cái chưa có, chưa tới nhưng sẽ tới, sẽ có khi có các điều kiện tương ứng hội đủ. Có nhiều loại khả năng: tất nhiên, ngẫu nhiên, thực tế, ảo tưởng, gần, xa...",
-    relationship: "Khả năng và hiện thực tồn tại trong mối liên hệ chặt chẽ, không tách rời nhau, luôn chuyển hóa lẫn nhau. Trong những điều kiện nhất định, khả năng biến thành hiện thực và hiện thực mới lại chứa đựng những khả năng mới. Để khả năng biến thành hiện thực cần có các điều kiện khách quan và nhân tố chủ quan.",
-    meaning: "Trong hoạt động thực tiễn phải dựa vào hiện thực để xác định phương hướng hành động. Đồng thời phải phát hiện các khả năng để có kế hoạch thúc đẩy khả năng có lợi thành hiện thực. Cần chú trọng nhân tố chủ quan trong việc biến khả năng thành hiện thực.",
-    example: "Một hạt giống đang cầm trên tay là 'Hiện thực'. Khả năng nó nảy mầm thành cây khi được gieo xuống đất ẩm là 'Khả năng'. Một học sinh đang học tập là hiện thực, khả năng trở thành kỹ sư trong tương lai là khả năng.",
-    icon: <History className="w-5 h-5" />
-  }
-];
 
 const FEATURE_IMAGES = {
   hero: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=1400&q=80",
@@ -211,7 +149,6 @@ export default function App() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState<Record<string, boolean>>({});
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -541,63 +478,6 @@ export default function App() {
     }
   };
 
-  const [laws, setLaws] = useState<Law[]>([
-    {
-      id: "law1",
-      title: "Quy luật Thống nhất và Đấu tranh của các mặt đối lập",
-      shortTitle: "Quy luật Mâu thuẫn",
-      subtitle: "Nguồn gốc và động lực của sự phát triển",
-      icon: <Zap className="w-6 h-6 text-accent" />,
-      imagePrompt: "An abstract artistic representation of two opposing forces (like fire and ice or light and shadow) swirling together to create a new energy, symbolic of dialectical contradiction and unity, bright colors, non-black background, academic style.",
-      content: `
-Quy luật này là **hạt nhân** của phép biện chứng, chỉ ra nguồn gốc và động lực của sự vận động.
-
-- **Mặt đối lập:** Các thuộc tính có khuynh hướng biến đổi trái ngược nhau.
-- **Thống nhất:** Sự nương tựa, đồng nhất và tác động ngang nhau.
-- **Đấu tranh:** Sự bài trừ, phủ định lẫn nhau giữa các mặt đối lập.
-
-**Cơ chế:** Việc giải quyết mâu thuẫn thông qua đấu tranh chính là động lực làm cái cũ mất đi, cái mới ra đời.
-      `,
-      example: "Mâu thuẫn giữa lực lượng sản xuất và quan hệ sản xuất thúc đẩy sự thay đổi hình thái kinh tế - xã hội."
-    },
-    {
-      id: "law2",
-      title: "Quy luật Lượng - Chất",
-      shortTitle: "Quy luật Lượng - Chất",
-      subtitle: "Cách thức của sự vận động và phát triển",
-      icon: <Layers className="w-6 h-6 text-accent" />,
-      imagePrompt: "A visual metaphor for quantity changing into quality: many small water droplets accumulating until they suddenly transform into a crystalline ice structure or a powerful wave, bright and clear aesthetics, symbolic of the law of quantity and quality.",
-      content: `
-Quy luật này chỉ ra **cách thức** vận động: sự tích lũy về lượng dẫn đến sự thay đổi về chất.
-
-- **Chất:** Thuộc tính khách quan làm sự vật là nó chứ không phải cái khác.
-- **Lượng:** Quy định về quy mô, số lượng, trình độ, nhịp độ.
-- **Cơ chế:** Lượng đổi đạt đến **Điểm nút** sẽ tạo ra **Bước nhảy** làm thay đổi căn bản về chất.
-
-**Ý nghĩa:** Cần tích lũy đủ về lượng, tránh nôn nóng đốt cháy giai đoạn hoặc bảo thủ trì trệ.
-      `,
-      example: "Học sinh tích lũy kiến thức (lượng) qua nhiều năm để vượt qua kỳ thi tốt nghiệp (bước nhảy về chất)."
-    },
-    {
-      id: "law3",
-      title: "Quy luật Phủ định của phủ định",
-      shortTitle: "Quy luật Phủ định",
-      subtitle: "Khuynh hướng của sự phát triển",
-      icon: <RefreshCw className="w-6 h-6 text-accent" />,
-      imagePrompt: "A beautiful glowing spiral or helical staircase rising upwards, with each level reflecting the one below but at a higher plane, symbolic of the law of negation of negation and the spiral nature of development, bright and optimistic colors.",
-      content: `
-Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu kỳ, quanh co như đường xoáy ốc.
-
-- **Phủ định biện chứng:** Sự tự phủ định, tự phát triển; có tính khách quan và kế thừa.
-- **Kế thừa:** Giữ lại và cải tạo những yếu tố tích cực từ cái cũ.
-- **Đường xoáy ốc:** Phát triển không theo đường thẳng mà dường như quay lại cái cũ nhưng ở trình độ cao hơn.
-
-**Ý nghĩa:** Xây dựng thái độ lạc quan, ủng hộ cái mới tiến bộ.
-      `,
-      example: "Hạt thóc -> Cây lúa -> Những hạt thóc mới (nhiều hơn, chất lượng hơn)."
-    }
-  ]);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -651,19 +531,6 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
     }
   };
 
-  const handleGenerateImage = async (lawId: string) => {
-    const law = laws.find(l => l.id === lawId);
-    if (!law || isGeneratingImage[lawId]) return;
-
-    setIsGeneratingImage(prev => ({ ...prev, [lawId]: true }));
-    const url = await generateImage(law.imagePrompt);
-
-    if (url) {
-      setLaws(prev => prev.map(l => l.id === lawId ? { ...l, imageUrl: url } : l));
-    }
-    setIsGeneratingImage(prev => ({ ...prev, [lawId]: false }));
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Toaster position="top-right" richColors />
@@ -681,6 +548,7 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
               <a href="#impacts" className="text-sm font-medium hover:text-primary transition-colors">Tác động</a>
               <a href="#directions" className="text-sm font-medium hover:text-primary transition-colors">Phương hướng</a>
               <a href="#flipbook" className="text-sm font-medium hover:text-primary transition-colors">Câu chuyện Hội nhập</a>
+              <a href="#review" className="text-sm font-medium hover:text-primary transition-colors">Ôn tập</a>
               {/* <a href="#categories" className="text-sm font-medium hover:text-primary transition-colors">Phạm trù</a> */}
             </div>
 
@@ -1125,22 +993,19 @@ Quy luật này chỉ ra **khuynh hướng** phát triển: tiến lên theo chu
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_bottom,var(--color-primary)_0%,transparent_70%)] opacity-[0.02]" />
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center text-center">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                <BookOpen className="w-5 h-5 text-white" />
+          <div className="text-center mb">
+                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Ôn tập</Badge>
+                <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Ôn tập kiến thức</h2>
+                <p className="text-muted-foreground max-w-3xl mx-auto text-lg font-light leading-relaxed">
+                   Mọi người cố gắng trả lời hết nhé!!!
+                </p>
               </div>
-              <span className="text-2xl font-serif font-bold tracking-tight">Kinh Tế Hội Nhập</span>
-            </div>
-            <nav className="flex flex-wrap justify-center gap-8 mb-12">
-              <a href="#overview" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Tổng quan</a>
-              <a href="#impacts" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Tác động</a>
-              <a href="#directions" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Phương hướng</a>
-              <a href="#flipbook" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Flipbook</a>
-              {/* <a href="#categories" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Phạm trù</a> */}
-              <button onClick={() => setIsChatOpen(true)} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Trợ lý AI</button>
-            </nav>
-            <Separator className="max-w-xs mx-auto mb-12 opacity-50" />
-            © 2026 — Kiến thức về hội nhập kinh tế quốc tế của Việt Nam.
+            <Separator className="max-w-xs mx-auto mb-10 opacity-50" />
+
+            <FooterQuiz />
+
+            <Separator className="max-w-xs mx-auto mt-12 mb-6 opacity-50" />
+            <p className="text-sm text-muted-foreground">© 2026 — Kiến thức về hội nhập kinh tế quốc tế của Việt Nam.</p>
           </div>
         </div>
       </footer>

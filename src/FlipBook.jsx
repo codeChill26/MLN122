@@ -10,57 +10,51 @@ import HTMLFlipBook from "react-pageflip";
 const PAGE_RATIO = 1.5;
 const AUDIO_END_OFFSETS_MS = [
   0, // cover_start
-  0,    // page1
-  4200, // page2
-  0,    // page3
-  4750, // page4
-  0,    // page5
-  4050, // page6
-  0,    // page7
-  3700, // page8
-  0,    // page9
-  4000, // page10
-  0,    // page11
-  4100, // page12
-  0,    // cover_end = page13.mp3
+  0, // 1
+  0, // 2
+  0, // 3
+  0, // 4
+  0, // 5
+  0, // 6
+  0, // 7
+  0, // 8
+  0, // 9
+  0, // 10
 ];
 
 const DEFAULT_PAGES = [
-  { src: "https://images.unsplash.com/photo-1528154032344-90d021667041?auto=format&fit=crop&w=1200&q=80", alt: "Bìa truyện: Con đường Hội nhập", type: "cover" },
-  { src: "https://images.unsplash.com/photo-1555620935-77636e053a47?auto=format&fit=crop&w=1200&q=80", alt: "Khởi đầu" },
-  { src: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80", alt: "Sự cần thiết" },
-  { src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80", alt: "Toàn cầu hóa" },
-  { src: "https://images.unsplash.com/photo-1582213710300-8517c2ca0d75?auto=format&fit=crop&w=1200&q=80", alt: "Hợp đồng lịch sử" },
-  { src: "https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?auto=format&fit=crop&w=1200&q=80", alt: "Nông sản vươn xa" },
-  { src: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80", alt: "Hiện đại hóa sản xuất" },
-  { src: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80", alt: "Nâng tầm nhân lực" },
-  { src: "https://images.unsplash.com/photo-1524522173746-f628baad3644?auto=format&fit=crop&w=1200&q=80", alt: "Thách thức cạnh tranh" },
-  { src: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1200&q=80", alt: "Rủi ro phụ thuộc" },
-  { src: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80", alt: "Chủ động thích nghi" },
-  { src: "https://images.unsplash.com/photo-1523726491678-bf852e717f6a?auto=format&fit=crop&w=1200&q=80", alt: "Đổi mới sáng tạo" },
-  { src: "https://images.unsplash.com/photo-1444492417251-9c84a5fa1c9b?auto=format&fit=crop&w=1200&q=80", alt: "Độc lập và Tự chủ" },
-  { src: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80", alt: "Bìa sau: Tương lai rộng mở", type: "cover" },
+  { src: "/pages/cover_start.png", alt: "Bìa truyện: Con đường Hội nhập", type: "cover" },
+  { src: "/pages/1.png", alt: "Trang 1" },
+  { src: "/pages/2.png", alt: "Trang 2" },
+  { src: "/pages/3.png", alt: "Trang 3" },
+  { src: "/pages/4.png", alt: "Trang 4" },
+  { src: "/pages/5.png", alt: "Trang 5" },
+  { src: "/pages/6.png", alt: "Trang 6" },
+  { src: "/pages/7.png", alt: "Trang 7" },
+  { src: "/pages/8.png", alt: "Trang 8" },
+  { src: "/pages/9.png", alt: "Trang 9" },
+  { src: "/pages/10.png", alt: "Trang 10" },
 ];
 
 const DEFAULT_STORY_TEXTS = [
-  "Con đường Hội nhập: Việt Nam vươn mình ra biển lớn. Câu chuyện về sự chuyển mình và gắn kết với kinh tế toàn cầu.",
-  "Từ những bước đi đầu tiên, Việt Nam nhận ra rằng hội nhập không chỉ là lựa chọn, mà là tất yếu khách quan để phát triển bền vững.",
-  "Để đẩy mạnh công nghiệp hóa, hiện đại hóa, chúng ta cần tận dụng nguồn lực từ thế giới: vốn, công nghệ và quản lý tiên tiến.",
-  "Làn sóng toàn cầu hóa cuốn phanh mọi rào cản, thúc đẩy sự phân công lao động quốc tế mạnh mẽ hơn bao giờ hết.",
-  "Gia nhập các định chế quốc tế (WTO, CPTPP...) là bước ngoặt đưa Việt Nam vào 'sân chơi chung' đầy cơ hội của nhân loại.",
-  "Hàng hóa Việt Nam, từ nông sản đến điện tử, bắt đầu hành trình chinh phục những thị trường khó tính nhất toàn cầu.",
-  "Các dòng vốn FDI đổ vào, mang theo những dây chuyền sản xuất tự động hóa hiện đại và tư duy quản trị mới.",
-  "Môi trường quốc tế là nơi nhân lực Việt Nam rèn luyện, nâng cao trình độ và khả năng thích ứng chuyên nghiệp.",
-  "Nhưng hội nhập cũng mang đến bão tố. Doanh nghiệp nội địa phải đối mặt với sức ép cạnh tranh khổng lồ từ các đối thủ lớn.",
-  "Chúng ta phải tỉnh táo trước nguy cơ phụ thuộc vào biến động bên ngoài và những thách thức về an sinh, môi trường.",
-  "Để vượt qua, mỗi doanh nghiệp và cá nhân cần chủ động nắm bắt luật chơi quốc tế, nâng cao năng lực cạnh tranh cốt lõi.",
-  "Chuyển mình mãnh liệt từ 'gia công' sang 'sáng tạo', khẳng định bản sắc và trí tuệ Việt trên bản đồ kinh tế toàn cầu.",
-  "Hội nhập nhưng giữ vững bản sắc. Xây dựng nền kinh tế độc lập, tự chủ là chìa khóa để bảo vệ chủ quyền quốc gia.",
-  "Tương lai rộng mở phía trước. Với tâm thế chủ động, Việt Nam sẵn sàng chinh phục những đỉnh cao mới trong kỷ nguyên hội nhập.",
+  "Bìa mở đầu: Con đường hội nhập kinh tế quốc tế của Việt Nam.",
+  "Trang 1",
+  "Trang 2",
+  "Trang 3",
+  "Trang 4",
+  "Trang 5",
+  "Trang 6",
+  "Trang 7",
+  "Trang 8",
+  "Trang 9",
+  "Trang 10",
 ];
 
+// Mapping audio theo chỉ số trang trong FlipBook:
+// index 0 = cover_start, index 1..10 = /pages/1.png..10.png
+// Chỉ dùng audio cho trang 1..9 theo yêu cầu.
 const DEFAULT_AUDIO_FILES = [
-  "/audio/page0.mp3",
+  null, // cover_start
   "/audio/page1.mp3",
   "/audio/page2.mp3",
   "/audio/page3.mp3",
@@ -70,10 +64,7 @@ const DEFAULT_AUDIO_FILES = [
   "/audio/page7.mp3",
   "/audio/page8.mp3",
   "/audio/page9.mp3",
-  "/audio/page10.mp3",
-  "/audio/page11.mp3",
-  "/audio/page12.mp3",
-  "/audio/page13.mp3",
+  null, // page 10: không có audio
 ];
 
 const FlipBook = React.forwardRef((props = {}, ref) => {
@@ -93,6 +84,7 @@ const FlipBook = React.forwardRef((props = {}, ref) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [bookSize, setBookSize] = useState({ width: 380, height: 570 });
+  const [audioStatus, setAudioStatus] = useState({ kind: "idle", message: "" });
 
   const pages = useMemo(() => DEFAULT_PAGES, []);
   const storyTexts = useMemo(() => DEFAULT_STORY_TEXTS, []);
@@ -182,6 +174,11 @@ const scheduleNextFlip = (delayMs, pageIndex) => {
 
     if (!audio || !file) {
       setIsPlaying?.(false);
+      if (!file) {
+        setAudioStatus({ kind: "missing", message: "Trang này không có audio." });
+      } else {
+        setAudioStatus({ kind: "error", message: "Không thể khởi tạo audio player." });
+      }
       return { ok: false, delayMs: 2500 };
     }
 
@@ -196,11 +193,17 @@ const scheduleNextFlip = (delayMs, pageIndex) => {
 
       await audio.play();
       setIsPlaying?.(true);
+      setAudioStatus({ kind: "playing", message: `Đang phát audio: ${file}` });
 
       return { ok: true, delayMs };
     } catch (error) {
       console.warn("Audio play blocked or failed:", error);
       setIsPlaying?.(false);
+      setAudioStatus({
+        kind: "error",
+        message:
+          `Không phát được audio cho trang này. Kiểm tra file tồn tại ở public (ví dụ: ${file}).`,
+      });
       return { ok: false, delayMs: 2500 };
     }
   };
@@ -311,9 +314,19 @@ const handleFlip = async (e) => {
   const nextPage = e?.data ?? 0;
   setCurrentPage(nextPage);
 
-  if (!isAutoPlay) return;
+  // Luôn phát audio khi lật trang (trang 1..9); các trang khác sẽ dừng.
+  if (!audioFiles?.[nextPage]) {
+    stopAudio();
+    setAudioStatus({ kind: "missing", message: "Trang này không có audio." });
+    if (!isAutoPlay) return;
+    // vẫn cho tự động lật tiếp nếu đang autoplay
+    scheduleNextFlip(2500, nextPage);
+    return;
+  }
 
   const result = await playAudioForPage(nextPage);
+
+  if (!isAutoPlay) return;
 
   if (nextPage >= pages.length - 1) {
     clearAutoPlayTimer();
@@ -385,7 +398,7 @@ const handleFlip = async (e) => {
           line-height: 1.04;
           font-weight: 700;
           font-style: italic;
-          font-family: Georgia, "Times New Roman", serif;
+          font-family: var(--font-serif), "Playfair Display", Georgia, "Times New Roman", serif;
           color: #18181b;
         }
 
@@ -658,7 +671,7 @@ const handleFlip = async (e) => {
         <div>
           <p className="flipbook-kicker">Truyện tranh tương tác</p>
           <h3 className="flipbook-title">
-            Con đường Hội nhập: Việt Nam và Kinh tế toàn cầu
+            Hướng nâng cao hiệu quả hội nhập quốc tế của Việt Nam
           </h3>
           <p className="flipbook-description">
             Lật trang để theo dõi diễn biến câu chuyện và cảm nhận các quy luật
@@ -670,6 +683,38 @@ const handleFlip = async (e) => {
           <span className="flipbook-page-chip">
             Trang {currentPage + 1} / {pages.length}
           </span>
+          {audioStatus?.kind !== "idle" && (
+            <span
+              className="flipbook-page-chip"
+              style={{
+                color:
+                  audioStatus.kind === "playing"
+                    ? "#166534"
+                    : audioStatus.kind === "missing"
+                      ? "#0f172a"
+                      : "#991b1b",
+                background:
+                  audioStatus.kind === "playing"
+                    ? "rgba(34,197,94,0.12)"
+                    : audioStatus.kind === "missing"
+                      ? "rgba(15,23,42,0.06)"
+                      : "rgba(239,68,68,0.12)",
+                borderColor:
+                  audioStatus.kind === "playing"
+                    ? "rgba(34,197,94,0.22)"
+                    : audioStatus.kind === "missing"
+                      ? "rgba(15,23,42,0.12)"
+                      : "rgba(239,68,68,0.22)",
+              }}
+              title={audioStatus.message}
+            >
+              {audioStatus.kind === "playing"
+                ? "Audio: đang phát"
+                : audioStatus.kind === "missing"
+                  ? "Audio: không có"
+                  : "Audio: lỗi"}
+            </span>
+          )}
           <button
             type="button"
             className="flipbook-btn flipbook-btn-secondary"
