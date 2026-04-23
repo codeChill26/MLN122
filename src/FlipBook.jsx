@@ -125,7 +125,7 @@ const getFlipDelayFromAudio = (audio, pageIndex) => {
   return Math.max(delay, 100);
 };
 
-  const waitForAudioMetadata = (audio) =>
+  const waitForAudioMetadata = (audio, timeoutMs = 3500) =>
     new Promise((resolve) => {
       if (!audio) {
         resolve();
@@ -147,7 +147,13 @@ const getFlipDelayFromAudio = (audio, pageIndex) => {
         resolve();
       };
 
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve();
+      }, timeoutMs);
+
       const cleanup = () => {
+        clearTimeout(timer);
         audio.removeEventListener("loadedmetadata", handleLoaded);
         audio.removeEventListener("canplaythrough", handleLoaded);
         audio.removeEventListener("error", handleError);
@@ -185,6 +191,8 @@ const scheduleNextFlip = (delayMs, pageIndex) => {
     try {
       audio.pause();
       audio.currentTime = 0;
+      audio.muted = false;
+      audio.volume = 1;
       audio.src = file;
       audio.load();
 
