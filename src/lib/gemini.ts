@@ -1,273 +1,133 @@
-import * as pdfjsLib from "pdfjs-dist";
+import { GoogleGenAI } from "@google/genai";
 
-type GeminiPart = { text: string };
-type GeminiRole = "user" | "model";
-export type GeminiHistoryItem = { role: GeminiRole; parts: GeminiPart[] };
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
-type DocChunk = {
-  id: string;
-  pageStart: number;
-  pageEnd: number;
-  text: string;
-  textNorm: string;
+type ChatHistoryItem = {
+  role: "user" | "model";
+  parts: { text: string }[];
 };
 
-const PDF_URL = "/images/MLN122 - Group 8.pdf";
-const LS_KEY = "thbc_pdf_index_v1_mln122_group8";
+const SYSTEM_INSTRUCTION = `Bạn là một chuyên gia về Kinh tế chính trị và Triết học Mác-Lênin, đặc biệt am hiểu về chủ đề "Hội nhập kinh tế quốc tế của Việt Nam".
+Nhiệm vụ của bạn là giải đáp các thắc mắc của người dùng dựa trên nội dung chính của giáo trình:
 
-let memoIndex: DocChunk[] | null = null;
-let memoIndexPromise: Promise<DocChunk[]> | null = null;
+1. Khái niệm & Sự cần thiết: Là quá trình tự nguyện gắn kết kinh tế quốc gia với thế giới (tự do hóa, mở cửa thị trường, tham gia định chế). Giúp tận dụng vốn, công nghệ, quản lý, mở rộng xuất khẩu và cải cách thể chế.
+2. Tính tất yếu: Do xu thế toàn cầu hóa không thể đảo ngược, sự phát triển của LLSX (CMCN 4.0) và nhu cầu giải quyết các vấn đề toàn cầu (biến đổi khí hậu, an ninh năng lượng).
+3. Tác động đa chiều: 
+   - Tích cực: Thúc đẩy GDP, thu hút FDI, nâng cao nhân lực, hoàn thiện thể chế.
+   - Tiêu cực: Áp lực cạnh tranh lớn, rủi ro phụ thuộc, phân hóa giàu nghèo, thách thức an ninh & môi trường.
+4. Phương hướng nâng cao hiệu quả: 
+   - Nhận thức thực tế về thời cơ/thách thức.
+   - Xây dựng chiến lược & lộ trình hội nhập toàn diện.
+   - Chủ động tham gia & đóng góp xây dựng luật chơi chung.
+   - Hoàn thiện thể chế & pháp luật đồng bộ.
+   - Nâng cao năng lực cạnh tranh (quốc gia, doanh nghiệp, sản phẩm).
+   - Xây dựng nền kinh tế độc lập, tự chủ (giữ vững định hướng, làm chủ ngành then chốt).
 
-function normalize(s: string) {
-  return (s || "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[“”"']/g, "")
-    .trim();
+Hãy trả lời một cách học thuật nhưng dễ hiểu, có ví dụ thực tiễn ngắn gọn. Trả lời bằng tiếng Việt, ngắn gọn, súc tích, đi thẳng vào vấn đề. Nếu người dùng hỏi ngoài chủ đề, hãy khéo léo dẫn dắt họ quay lại nội dung hội nhập và kinh tế chính trị.`;
+
+const CHAT_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash-latest"];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function splitIntoChunks(text: string, opts: { chunkSize: number; overlap: number }) {
-  const { chunkSize, overlap } = opts;
-  const clean = text.replace(/\s+/g, " ").trim();
-  if (!clean) return [];
-
-  const chunks: string[] = [];
-  let i = 0;
-  while (i < clean.length) {
-    const end = Math.min(clean.length, i + chunkSize);
-    const slice = clean.slice(i, end).trim();
-    if (slice) chunks.push(slice);
-    if (end >= clean.length) break;
-    i = Math.max(0, end - overlap);
-  }
-  return chunks;
+function getErrorMessage(error: any): string {
+  return String(
+    error?.message ||
+    error?.statusText ||
+    error?.toString?.() ||
+    "Đã có lỗi xảy ra khi kết nối Gemini."
+  );
 }
 
-function scoreChunk(queryNorm: string, chunkNorm: string) {
-  // scoring đơn giản: đếm số từ khóa xuất hiện (không cần embedding)
-  const qWords = queryNorm.split(" ").filter(w => w.length >= 3);
-  if (qWords.length === 0) return 0;
-
-  let hit = 0;
-  for (const w of qWords) {
-    if (chunkNorm.includes(w)) hit++;
-  }
-  return hit / qWords.length;
+function isHighDemandError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("503") ||
+    normalized.includes("service unavailable") ||
+    normalized.includes("unavailable") ||
+    normalized.includes("high demand")
+  );
 }
 
-async function extractPdfTextByPage(url: string) {
-  // pdfjs worker
-  try {
-    (pdfjsLib as any).GlobalWorkerOptions.workerSrc = new URL(
-      "pdfjs-dist/build/pdf.worker.min.mjs",
-      import.meta.url,
-    ).toString();
-  } catch {
-    // ignore - pdfjs may auto-resolve worker depending on bundler
-  }
-
-  const loadingTask = (pdfjsLib as any).getDocument(url);
-  const pdf = await loadingTask.promise;
-  const pages: string[] = [];
-
-  for (let p = 1; p <= pdf.numPages; p++) {
-    const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
-    const strings = (content.items || [])
-      .map((it: any) => (typeof it?.str === "string" ? it.str : ""))
-      .filter(Boolean);
-    pages.push(strings.join(" "));
-  }
-  return pages;
+function isApiKeyError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("api key") ||
+    normalized.includes("permission") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("leaked") ||
+    normalized.includes("permission denied") ||
+    normalized.includes("403")
+  );
 }
 
-async function buildIndex(): Promise<DocChunk[]> {
-  const cached = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed as DocChunk[];
+export const getChatResponse = async (
+  message: string,
+  history: ChatHistoryItem[]
+): Promise<string> => {
+  if (!ai) {
+    return "Chưa cấu hình VITE_GEMINI_API_KEY trong file .env.local nên chatbot AI chưa hoạt động.";
+  }
+
+  let lastError: any = null;
+
+  for (const model of CHAT_MODELS) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [
+            ...history,
+            { role: "user", parts: [{ text: message }] },
+          ],
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            temperature: 0.7,
+          },
+        });
+
+        const text = response.text?.trim();
+        if (text) {
+          return text;
+        }
+
+        return "Tôi chưa tạo được phản hồi từ Gemini. Hãy thử lại.";
+      } catch (error: any) {
+        lastError = error;
+        const rawMessage = getErrorMessage(error);
+        console.error(
+          `Error calling Gemini API (model: ${model}, attempt: ${attempt + 1}):`,
+          error
+        );
+
+        if (isApiKeyError(rawMessage)) {
+          return "Gemini API key hiện không dùng được. Bạn cần thay bằng key mới còn hoạt động trong file .env.local.";
+        }
+
+        if (isHighDemandError(rawMessage)) {
+          if (attempt < 2) {
+            await sleep(1200 * (attempt + 1));
+            continue;
+          }
+          break;
+        }
+
+        return "Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo.";
       }
-    } catch {
-      // ignore
     }
   }
 
-  const pages = await extractPdfTextByPage(PDF_URL);
-  const all: DocChunk[] = [];
+  const finalMessage = getErrorMessage(lastError);
 
-  pages.forEach((pageText, idx) => {
-    const pageNumber = idx + 1;
-    const chunks = splitIntoChunks(pageText, { chunkSize: 900, overlap: 180 });
-    chunks.forEach((t, j) => {
-      all.push({
-        id: `p${pageNumber}_c${j + 1}`,
-        pageStart: pageNumber,
-        pageEnd: pageNumber,
-        text: t,
-        textNorm: normalize(t),
-      });
-    });
-  });
-
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(all));
-    } catch {
-      // ignore quota
-    }
+  if (isHighDemandError(finalMessage)) {
+    return "Hệ thống AI đang quá tải tạm thời. Bạn thử lại sau vài giây.";
   }
 
-  return all;
-}
-
-async function getIndex(): Promise<DocChunk[]> {
-  if (memoIndex) return memoIndex;
-  if (!memoIndexPromise) {
-    memoIndexPromise = buildIndex()
-      .then((idx) => {
-        memoIndex = idx;
-        return idx;
-      })
-      .finally(() => {
-        memoIndexPromise = null;
-      });
+  if (isApiKeyError(finalMessage)) {
+    return "Gemini API key hiện không dùng được. Bạn cần thay bằng key mới còn hoạt động trong file .env.local.";
   }
-  return memoIndexPromise;
-}
 
-async function buildDocContext(question: string) {
-  const qNorm = normalize(question);
-  if (!qNorm) return { contextText: "", used: [] as DocChunk[] };
-
-  try {
-    const index = await getIndex();
-    const ranked = index
-      .map((c) => ({ c, s: scoreChunk(qNorm, c.textNorm) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, 3)
-      .map((x) => x.c);
-
-    if (ranked.length === 0) return { contextText: "", used: [] as DocChunk[] };
-
-    const contextText =
-      "Trích đoạn liên quan từ tài liệu (MLN122 - Group 8):\n" +
-      ranked
-        .map(
-          (c, i) =>
-            `(${i + 1}) [trang ${c.pageStart}] ${c.text}`,
-        )
-        .join("\n\n");
-
-    return { contextText, used: ranked };
-  } catch {
-    return { contextText: "", used: [] as DocChunk[] };
-  }
-}
-
-async function callGemini(prompt:string, history:GeminiHistoryItem[]) {
-
-  const apiKey=(import.meta as any).env?.VITE_GEMINI_API_KEY;
-  if(!apiKey){
-    return "Thiếu API key";
-  }
- 
-  const models=[
-    "gemini-2.5-flash",
-    "gemini-2.0-flash"
-  ];
-  const systemInstruction = `
-  Bạn là trợ lý học tập môn triết học về chủ đề Hội nhập kinh tế quốc tế của Việt Nam.
-  
-  Quy tắc:
-  - Nếu có trích đoạn tài liệu, ưu tiên dùng tài liệu.
-  - Nếu tài liệu chưa đủ, được phép bổ sung kiến thức chung.
-  - Nếu dùng kiến thức ngoài tài liệu, ghi:
-  "Dựa trên kiến thức ngoài tài liệu:"
-  - Trả lời đầy đủ, có giải thích, có ví dụ, ưu tiên gạch đầu dòng.
-  `;
-  const contents=[
-    { role:"user", parts:[{text:systemInstruction}]},
-    ...(Array.isArray(history)?history:[]),
-    { role:"user", parts:[{text:prompt}]}
-  ];
- 
-  let lastError="";
- 
-  for(const model of models){
- 
-    const endpoint=
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
- 
-    try{
- 
-       const res=await fetch(endpoint,{
-         method:"POST",
-         headers:{
-           "Content-Type":"application/json"
-         },
-         body:JSON.stringify({
-           contents,
-           generationConfig:{
-             temperature:0.4,
-             topP:0.95,
-             maxOutputTokens:1000
-           }
-         })
-       });
- 
-       if(res.ok){
-         const data=await res.json();
- 
-         const text=
-          data?.candidates?.[0]?.content?.parts
-           ?.map((p:any)=>p?.text)
-           .filter(Boolean)
-           .join("") ?? "";
- 
-         if(text){
-           return text;
-         }
-       }
- 
-       // chỉ fallback khi quota/rate limit
-       if(res.status===429){
-         lastError=`Model ${model} bị rate limit, thử model khác...`;
-         continue;
-       }
- 
-       // lỗi khác thì dừng
-       const err=await res.text();
-       return `HTTP ${res.status}: ${err}`;
- 
-    }catch(e:any){
-       lastError=String(e);
-       continue;
-    }
-  }
- 
-  return `Không gọi được AI. ${lastError}`;
- }
-
-export async function getChatResponse(question: string, history: GeminiHistoryItem[] = []) {
-  const { contextText, used } = await buildDocContext(question);
-  const prompt =
-    contextText
-      ? `${question}\n\n${contextText}`
-      : `${question}
-
-      Nếu có nội dung trong tài liệu, ưu tiên dùng tài liệu.
-      Nếu không có, hãy trả lời bằng kiến thức chung.
-      Nếu dùng kiến thức ngoài tài liệu, phải ghi:
-      "Dựa trên kiến thức ngoài tài liệu:"`;
-
-  const answer = await callGemini(prompt, history);
-
-  if (!contextText) return answer;
-  if (used.length === 0) return answer;
-
-  return `${answer}`;
-}
-
+  return "Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo.";
+};

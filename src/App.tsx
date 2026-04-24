@@ -56,6 +56,7 @@ import { auth, googleProvider } from "./lib/firebase";
 import { signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import FlipBook from "./FlipBook";
 
+
 interface Message {
   role: "user" | "model";
   text: string;
@@ -647,7 +648,7 @@ export default function App() {
 
                 {/* 3. Đoạn mô tả (p): Đổi text-black thành text-white cố định */}
                 <p className="text-xl md:text-2xl text-white max-w-3xl mx-auto mb-12 font-sans font-medium leading-relaxed drop-shadow-xl">
-                  Quá trình quốc gia thực hiện gắn kết nền kinh tế của mình với nền kinh tế thế giới thông qua các nỗ lực tự nguyện: tự do hóa kinh tế, mở cửa thị trường và tham gia các định chế quốc tế.
+                  Quá trình quốc gia đó thực hiện gắn kết nền kinh tế của mình với nền kinh tế thế giới dựa trên sự chia sẻ lợi ích đồng thời tuân thủ các chuẩn mực quốc tế chung.
                 </p>
 
                 <div className="max-w-4xl mx-auto mb-12 overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/10 dark:bg-zinc-900/50 shadow-2xl backdrop-blur-sm">
@@ -678,7 +679,8 @@ export default function App() {
             </div>
           </div>
         </section>
-        {/* Overview Section */}
+       ;
+
         <section
           id="overview"
           className="py-24 relative z-10 bg-center bg-cover"
