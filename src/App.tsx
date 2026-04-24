@@ -169,6 +169,9 @@ export default function App() {
   const [newPhotoURL, setNewPhotoURL] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isCloudChatEnabled, setIsCloudChatEnabled] = useState(true);
+  const experienceUrl =
+    typeof window !== "undefined" ? window.location.href : "https://example.com";
+  const qrCodeUrl = `..\public\images\\1. QUY LUẬT LƯỢNG - CHẤT (Quy luật về sự chuyển hoá từ những thay đổi về lượng thành những thay đổi về chất và ngược lại) Vị trí của quy luật Chỉ ra cách thức vận động và phát triển của sự vật hiệ.png`;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -550,6 +553,7 @@ export default function App() {
               <a href="#directions" className="text-sm font-medium hover:text-primary transition-colors">Phương hướng</a>
               <a href="#flipbook" className="text-sm font-medium hover:text-primary transition-colors">Câu chuyện Hội nhập</a>
               <a href="#review" className="text-sm font-medium hover:text-primary transition-colors">Ôn tập</a>
+              <a href="#qr" className="text-sm font-medium hover:text-primary transition-colors">QR Code</a>
               {/* <a href="#categories" className="text-sm font-medium hover:text-primary transition-colors">Phạm trù</a> */}
             </div>
 
@@ -989,6 +993,8 @@ export default function App() {
           </div>
         </section>
 
+        
+
       </main>
 
       <footer className="py-20 border-t bg-white dark:bg-zinc-950 relative overflow-hidden">
@@ -1005,6 +1011,28 @@ export default function App() {
             <Separator className="max-w-xs mx-auto mb-10 opacity-50" />
 
             <FooterQuiz />
+
+            <div
+              id="qr"
+              className="mt-12 w-full max-w-4xl rounded-[2rem] border border-primary/10 bg-primary/[0.03] p-6 md:p-10"
+            >
+              <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">
+                Quá đẹp cho một trang web
+              </Badge>
+              <h3 className="text-3xl md:text-4xl font-serif italic mb-4">
+                Thỏa sức trải nghiệm
+              </h3>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-8">
+                Quét mã 
+              </p>
+              <div className="mx-auto w-full max-w-[280px] rounded-[1.5rem] border border-primary/10 bg-white p-4 shadow-xl">
+                <img
+                  src="/images/QRCode.png"
+                  alt="Ma QR truy cap trang web"
+                  className="w-full h-auto rounded-xl"
+                />
+              </div>
+            </div>
 
             <Separator className="max-w-xs mx-auto mt-12 mb-6 opacity-50" />
             <p className="text-sm text-muted-foreground">© 2026 — Kiến thức về hội nhập kinh tế quốc tế của Việt Nam.</p>
