@@ -979,7 +979,7 @@ export default function App() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-16">
-                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">Truyện tranh tương tác</Badge>
+                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-full px-4">ltranh tương tác</Badge>
                 <h2 className="text-4xl md:text-5xl mb-6 font-serif italic">Con đường Hội nhập của Việt Nam</h2>
                 <p className="text-muted-foreground max-w-3xl mx-auto text-lg font-light leading-relaxed">
                   Theo chân hành trình lật mở những trang sử kinh tế, từ những ngày đầu mở cửa đến khát vọng kiến tạo giá trị Việt trên thị trường toàn cầu.

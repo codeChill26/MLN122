@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
+import { getRelevantChunks } from "./document-grounding";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY?.trim();
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 type ChatHistoryItem = {
@@ -8,37 +9,41 @@ type ChatHistoryItem = {
   parts: { text: string }[];
 };
 
-const SYSTEM_INSTRUCTION = `Bạn là một chuyên gia về Kinh tế chính trị và Triết học Mác-Lênin, đặc biệt am hiểu về chủ đề "Hội nhập kinh tế quốc tế của Việt Nam".
-Nhiệm vụ của bạn là giải đáp các thắc mắc của người dùng dựa trên nội dung chính của giáo trình:
+const SYSTEM_INSTRUCTION = `Bạn là trợ lý học tập chỉ được phép trả lời dựa trên các đoạn trích từ đúng một tài liệu nguồn do hệ thống cung cấp.
 
-1. Khái niệm & Sự cần thiết: Là quá trình tự nguyện gắn kết kinh tế quốc gia với thế giới (tự do hóa, mở cửa thị trường, tham gia định chế). Giúp tận dụng vốn, công nghệ, quản lý, mở rộng xuất khẩu và cải cách thể chế.
-2. Tính tất yếu: Do xu thế toàn cầu hóa không thể đảo ngược, sự phát triển của LLSX (CMCN 4.0) và nhu cầu giải quyết các vấn đề toàn cầu (biến đổi khí hậu, an ninh năng lượng).
-3. Tác động đa chiều: 
-   - Tích cực: Thúc đẩy GDP, thu hút FDI, nâng cao nhân lực, hoàn thiện thể chế.
-   - Tiêu cực: Áp lực cạnh tranh lớn, rủi ro phụ thuộc, phân hóa giàu nghèo, thách thức an ninh & môi trường.
-4. Phương hướng nâng cao hiệu quả: 
-   - Nhận thức thực tế về thời cơ/thách thức.
-   - Xây dựng chiến lược & lộ trình hội nhập toàn diện.
-   - Chủ động tham gia & đóng góp xây dựng luật chơi chung.
-   - Hoàn thiện thể chế & pháp luật đồng bộ.
-   - Nâng cao năng lực cạnh tranh (quốc gia, doanh nghiệp, sản phẩm).
-   - Xây dựng nền kinh tế độc lập, tự chủ (giữ vững định hướng, làm chủ ngành then chốt).
+Quy tắc bắt buộc:
+1. Chỉ sử dụng thông tin có trong các đoạn trích của tài liệu nguồn.
+2. Không bổ sung kiến thức bên ngoài, không suy đoán, không dùng trí nhớ nền.
+3. Nếu tài liệu không đủ thông tin để trả lời, phải nói rõ: "Trong tài liệu được cung cấp, mình chưa thấy thông tin đủ để trả lời câu này."
+4. Trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu, đi thẳng vào câu hỏi.
+5. Khi phù hợp, nhắc ngắn rằng câu trả lời đang dựa trên giáo trình được cung cấp.
+6. Nếu người dùng hỏi ngoài phạm vi tài liệu, từ chối nhẹ nhàng và nói rằng bạn chỉ được trả lời theo tài liệu này.`;
 
-Hãy trả lời một cách học thuật nhưng dễ hiểu, có ví dụ thực tiễn ngắn gọn. Trả lời bằng tiếng Việt, ngắn gọn, súc tích, đi thẳng vào vấn đề. Nếu người dùng hỏi ngoài chủ đề, hãy khéo léo dẫn dắt họ quay lại nội dung hội nhập và kinh tế chính trị.`;
-
-const CHAT_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash-latest"];
+const CHAT_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-flash-latest",
+];
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getErrorMessage(error: any): string {
-  return String(
-    error?.message ||
-    error?.statusText ||
-    error?.toString?.() ||
-    "Đã có lỗi xảy ra khi kết nối Gemini."
-  );
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const maybeMessage =
+      (error as { statusText?: string; message?: string }).message ||
+      (error as { statusText?: string; message?: string }).statusText;
+    if (maybeMessage) {
+      return String(maybeMessage);
+    }
+  }
+
+  return "Đã có lỗi xảy ra khi kết nối Gemini.";
 }
 
 function isHighDemandError(message: string): boolean {
@@ -63,60 +68,145 @@ function isApiKeyError(message: string): boolean {
   );
 }
 
+function isModelError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("model") ||
+    normalized.includes("not found") ||
+    normalized.includes("does not exist") ||
+    normalized.includes("unsupported")
+  );
+}
+
+function isNetworkError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("networkerror") ||
+    normalized.includes("load failed") ||
+    normalized.includes("network request failed")
+  );
+}
+
+function formatHistory(history: ChatHistoryItem[]): string {
+  return history
+    .slice(-6)
+    .map((item) => {
+      const text = item.parts.map((part) => part.text).join(" ").trim();
+      const label = item.role === "user" ? "Người dùng" : "Trợ lý";
+      return `${label}: ${text}`;
+    })
+    .join("\n");
+}
+
+function buildGroundedPrompt(
+  message: string,
+  history: ChatHistoryItem[],
+  chunks: { id: string; text: string }[],
+  title: string
+) {
+  const excerpts = chunks
+    .map((chunk, index) => `[Đoạn ${index + 1} | ${chunk.id}]\n${chunk.text}`)
+    .join("\n\n");
+
+  const historyText = formatHistory(history);
+
+  return `Tài liệu nguồn: ${title}
+
+Lịch sử hội thoại gần đây:
+${historyText || "Không có."}
+
+Câu hỏi hiện tại:
+${message}
+
+Các đoạn trích được phép sử dụng để trả lời:
+${excerpts}
+
+Yêu cầu trả lời:
+- Chỉ trả lời dựa trên các đoạn trích bên trên.
+- Nếu không đủ dữ kiện, phải nói đúng câu: "Trong tài liệu được cung cấp, mình chưa thấy thông tin đủ để trả lời câu này."
+- Không dùng kiến thức ngoài tài liệu.
+- Nếu có thể, nêu ngắn gọn ý chính theo gạch đầu dòng hoặc đoạn ngắn.`;
+}
+
 export const getChatResponse = async (
   message: string,
   history: ChatHistoryItem[]
 ): Promise<string> => {
   if (!ai) {
-    return "Chưa cấu hình VITE_GEMINI_API_KEY trong file .env.local nên chatbot AI chưa hoạt động.";
+    return "Chưa cấu hình `VITE_GEMINI_API_KEY` trong `.env` hoặc `.env.local` nên chatbot AI chưa hoạt động.";
   }
 
-  let lastError: any = null;
+  let lastError: unknown = null;
 
-  for (const model of CHAT_MODELS) {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: [
-            ...history,
-            { role: "user", parts: [{ text: message }] },
-          ],
-          config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
-            temperature: 0.7,
-          },
-        });
+  try {
+    const { knowledge, chunks } = await getRelevantChunks(message, 6);
 
-        const text = response.text?.trim();
-        if (text) {
-          return text;
-        }
+    if (chunks.length === 0) {
+      return "Trong tài liệu được cung cấp, mình chưa thấy thông tin đủ để trả lời câu này.";
+    }
 
-        return "Tôi chưa tạo được phản hồi từ Gemini. Hãy thử lại.";
-      } catch (error: any) {
-        lastError = error;
-        const rawMessage = getErrorMessage(error);
-        console.error(
-          `Error calling Gemini API (model: ${model}, attempt: ${attempt + 1}):`,
-          error
-        );
+    const groundedPrompt = buildGroundedPrompt(
+      message,
+      history,
+      chunks,
+      knowledge.title
+    );
 
-        if (isApiKeyError(rawMessage)) {
-          return "Gemini API key hiện không dùng được. Bạn cần thay bằng key mới còn hoạt động trong file .env.local.";
-        }
+    for (const model of CHAT_MODELS) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const response = await ai.models.generateContent({
+            model,
+            contents: groundedPrompt,
+            config: {
+              systemInstruction: SYSTEM_INSTRUCTION,
+              temperature: 0.2,
+            },
+          });
 
-        if (isHighDemandError(rawMessage)) {
-          if (attempt < 2) {
-            await sleep(1200 * (attempt + 1));
-            continue;
+          const text = response.text?.trim();
+          if (text) {
+            return text;
           }
-          break;
-        }
 
-        return "Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo.";
+          return "Trong tài liệu được cung cấp, mình chưa thấy thông tin đủ để trả lời câu này.";
+        } catch (error) {
+          lastError = error;
+          const rawMessage = getErrorMessage(error);
+
+          console.error(
+            `Error calling Gemini API (model: ${model}, attempt: ${attempt + 1}):`,
+            error
+          );
+
+          if (isApiKeyError(rawMessage)) {
+            return "Gemini API key hiện không dùng được. Hãy kiểm tra key còn hoạt động, đúng project, và đã bật Gemini Developer API.";
+          }
+
+          if (isHighDemandError(rawMessage)) {
+            if (attempt < 2) {
+              await sleep(1200 * (attempt + 1));
+              continue;
+            }
+            break;
+          }
+
+          if (isModelError(rawMessage)) {
+            break;
+          }
+
+          if (isNetworkError(rawMessage)) {
+            return "Không kết nối được tới Gemini. Hãy kiểm tra mạng, tường lửa, VPN, hoặc extension đang chặn request.";
+          }
+
+          return "Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo.";
+        }
       }
     }
+  } catch (error) {
+    console.error("Failed to load grounded document data:", error);
+    return "Không đọc được dữ liệu đã trích từ PDF. Mình cần tạo lại dữ liệu tài liệu trước khi chatbot hoạt động.";
   }
 
   const finalMessage = getErrorMessage(lastError);
@@ -126,7 +216,15 @@ export const getChatResponse = async (
   }
 
   if (isApiKeyError(finalMessage)) {
-    return "Gemini API key hiện không dùng được. Bạn cần thay bằng key mới còn hoạt động trong file .env.local.";
+    return "Gemini API key hiện không dùng được. Hãy kiểm tra key còn hoạt động, đúng project, và đã bật Gemini Developer API.";
+  }
+
+  if (isModelError(finalMessage)) {
+    return "Model Gemini đang cấu hình không hợp lệ hoặc đã ngừng hỗ trợ. Mình đã tự fallback, nhưng hiện chưa có model nào trả lời được.";
+  }
+
+  if (isNetworkError(finalMessage)) {
+    return "Không kết nối được tới Gemini. Hãy kiểm tra mạng, tường lửa, VPN, hoặc extension đang chặn request.";
   }
 
   return "Xin lỗi, đã có lỗi xảy ra khi kết nối với trí tuệ nhân tạo.";
